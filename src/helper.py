@@ -4,37 +4,45 @@ from dotenv import load_dotenv
 import os
 from gtts import gTTS
 import pyttsx3
+import sounddevice as sd
+import numpy as np
 
 print("perfect!!")
 load_dotenv()
 
-GOOGLE_API_KEY=os.getenv("GOOGLE_API_KEY")
-os.environ["GOOGLE_API_KEY"]=GOOGLE_API_KEY
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 
 
+def voice_input(duration=5):
+    r = sr.Recognizer()
 
-def voice_input():
-    r=sr.Recognizer()
+    # Record audio for the specified duration
+    print("Listening...")
+    audio_data = sd.rec(int(duration * 44100), samplerate=44100, channels=1, dtype='int16')
+    sd.wait()  # Wait until recording is finished
+    print("Audio recording finished.")
+
+    # Convert to bytes
+    audio_data = audio_data.flatten()  # Flatten to 1D array
+    audio_bytes = audio_data.tobytes()  # Convert to bytes
+
+    # Create an AudioData object for use in speech recognition
+    audio = sr.AudioData(audio_bytes, 44100, 2)  # Sample rate and width
     
-    with sr.Microphone() as source:
-        print("listening...")
-        audio=r.listen(source)
     try:
-        text=r.recognize_google(audio)
-        print("you said: ", text)
+        # Use Google's speech recognition API to recognize the audio
+        text = r.recognize_google(audio)
+        print("You said:", text)
         return text
     except sr.UnknownValueError:
-        print("sorry, could not understand the audio")
+        print("Sorry, could not understand the audio")
     except sr.RequestError as e:
-        print("could not request result from google speech recognition service: {0}".format(e))
-    
+        print(f"Could not request result from Google Speech Recognition service: {e}")
+
 
 def text_to_speech(text):
-    # tts=gTTS(text=text, lang="en",slow=False)
-    
-    # #save the speech from the given text in the mp3 format
-    # tts.save("speech.mp3")
-    
+    # Initialize text-to-speech engine
     engine = pyttsx3.init()
     
     # Set parameters, like speed (words per minute)
@@ -52,19 +60,14 @@ def text_to_speech(text):
     
     return audio_output
 
+
 def llm_model_object(user_text):
-    #model = "models/gemini-pro"
-    
     genai.configure(api_key=GOOGLE_API_KEY)
     
     model = genai.GenerativeModel('gemini-pro')
     
-    response=model.generate_content(user_text)
+    response = model.generate_content(user_text)
     
-    result=response.text
+    result = response.text
     
     return result
-    
-    
-    
-    
